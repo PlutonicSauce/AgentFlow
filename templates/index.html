@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AgentFlow IDE</title>
+    <style>
+        :root {
+            --bg: #0f111a;
+            --surface: #1a1c29;
+            --primary: #c792ea;
+            --text: #a6accd;
+            --border: #292d3e;
+            --console-bg: #000000;
+            --console-text: #00ff00;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+        header {
+            padding: 15px 30px;
+            background-color: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 { margin: 0; font-size: 1.2rem; color: #fff; }
+        .tagline { color: var(--primary); font-size: 0.9rem; margin-left: 10px; }
+        .run-btn {
+            background-color: var(--primary);
+            color: #000;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .run-btn:hover { opacity: 0.8; }
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .editor-pane, .console-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .editor-pane {
+            border-right: 1px solid var(--border);
+        }
+        textarea {
+            flex: 1;
+            background-color: var(--surface);
+            color: #fff;
+            border: none;
+            padding: 20px;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+        }
+        .console-header {
+            padding: 10px 20px;
+            background-color: var(--surface);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+            color: #fff;
+        }
+        pre#output {
+            flex: 1;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--console-bg);
+            color: var(--console-text);
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 13px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .loading { opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>AgentFlow IDE <span class="tagline">Syntax Summit Edition</span></h1>
+        </div>
+        <button class="run-btn" onclick="runCode()" id="runBtn">Run Flow ▶</button>
+    </header>
+    <div class="workspace">
+        <div class="editor-pane">
+            <textarea id="code" spellcheck="false">
+// AgentFlow Script with Error Handling
+
+agent Analyst {
+    model: "gemini-1.5-pro"
+    prompt: "You are an analyst. Analyze the data."
+}
+
+agent Reporter {
+    model: "gemini-1.5-flash"
+    prompt: "Create a summary report."
+}
+
+flow RobustAnalysis(topic) {
+    // LLMs are inherently flaky. 
+    // The retry block provides native resiliency.
+    report = retry 3 {
+        data = Analyst.run(topic)
+        Reporter.run(data)
+    }
+    
+    return report
+}
+
+// "Flaky" triggers the mock LLM's simulated connection error
+run RobustAnalysis("Flaky system metrics")</textarea>
+        </div>
+        <div class="console-pane">
+            <div class="console-header">Console Output</div>
+            <pre id="output">Ready. Click 'Run Flow' to orchestrate agents.</pre>
+        </div>
+    </div>
+
+    <script>
+        async function runCode() {
+            const code = document.getElementById('code').value;
+            const outputEl = document.getElementById('output');
+            const btn = document.getElementById('runBtn');
+            
+            outputEl.textContent = 'Executing...';
+            outputEl.classList.add('loading');
+            btn.disabled = true;
+            btn.textContent = 'Running...';
+
+            try {
+                const response = await fetch('/api/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await response.json();
+                outputEl.textContent = data.output || 'Process exited with no output.';
+            } catch (err) {
+                outputEl.textContent = 'Error communicating with interpreter backend:\n' + err;
+            } finally {
+                outputEl.classList.remove('loading');
+                btn.disabled = false;
+                btn.textContent = 'Run Flow ▶';
+            }
+        }
+    </script>
+</body>
+</html>
