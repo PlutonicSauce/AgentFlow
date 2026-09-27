@@ -1,0 +1,26 @@
+// AgentFlow Script with Error Handling
+
+agent Analyst {
+    model: "gemini-1.5-pro"
+    prompt: "You are an analyst. Analyze the data."
+}
+
+agent Reporter {
+    model: "gemini-1.5-flash"
+    prompt: "Create a summary report."
+}
+
+flow RobustAnalysis(topic) {
+    // LLMs are inherently flaky, especially when calling external tools.
+    // The retry block provides native resiliency.
+    report = retry 3 {
+        data = Analyst.run(topic)
+        // If the above fails, it retries the whole block
+        Reporter.run(data)
+    }
+    
+    return report
+}
+
+// "Flaky" triggers the mock LLM's simulated connection error
+run RobustAnalysis("Flaky system metrics")

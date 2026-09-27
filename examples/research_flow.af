@@ -1,0 +1,19 @@
+agent Researcher {
+    model: "gemini-1.5-pro"
+    prompt: "You are an expert researcher. Find and synthesize deep technical information."
+    tools: [WebSearch, Wikipedia]
+}
+
+agent Summarizer {
+    model: "gemini-1.5-flash"
+    prompt: "You are a precise editor. Summarize the provided text concisely."
+    tools: []
+}
+
+flow ResearchAndSummarize(topic) {
+    data = Researcher.run(topic)
+    summary = Summarizer.run(data)
+    return summary
+}
+
+run ResearchAndSummarize("Recent advancements in Quantum Computing")
